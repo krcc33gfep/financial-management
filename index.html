@@ -22,20 +22,8 @@
   header {
     display: flex;
     padding: 10px;
-    gap: 8px;
     background: #111;
     align-items: center;
-  }
-
-  input[type="file"] { display: none; }
-
-  label {
-    background: #333;
-    padding: 8px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.9em;
-    white-space: nowrap;
   }
 
   input[type="text"] {
@@ -95,8 +83,6 @@
 <body>
 
 <header>
-  <label for="fileInput">📂 開く</label>
-  <input id="fileInput" type="file" accept=".csv">
   <input id="search" type="text" placeholder="検索...">
 </header>
 
@@ -105,18 +91,19 @@
 <script>
 let rows = [];
 
-/* ✅ CSV読込（PapaParse使用） */
-fileInput.addEventListener("change", e => {
-  const file = e.target.files[0];
-  Papa.parse(file, {
-    complete: function(results) {
-      rows = results.data.filter(r => r.length > 1);
-      render(rows);
-    },
-    encoding: "UTF-8",
-    skipEmptyLines: true
-  });
-});
+/* ✅ CSV自動読込 */
+fetch("20241115.csv")
+  .then(response => response.text())
+  .then(csvText => {
+    Papa.parse(csvText, {
+      complete: function(results) {
+        rows = results.data.filter(r => r.length > 1);
+        render(rows);
+      },
+      skipEmptyLines: true
+    });
+  })
+  .catch(err => console.error("CSVの読み込みに失敗:", err));
 
 /* 🔍 入力のたびに即フィルタ */
 search.addEventListener("input", () => {
