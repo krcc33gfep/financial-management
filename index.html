@@ -37,6 +37,16 @@
 <script>
 let rows = [];
 
+/* 日本語日付文字列をDateに変換 */
+function parseJapaneseDate(str) {
+  const m = str.match(/(\d+)年(\d+)月(\d+)日/);
+  if (!m) return new Date(0); // 解析失敗時は過去日付
+  const year = parseInt(m[1],10);
+  const month = parseInt(m[2],10) - 1; // JSの月は0始まり
+  const day = parseInt(m[3],10);
+  return new Date(year, month, day);
+}
+
 /* CSV自動読込＆ヘッダー対応＆日付降順ソート */
 fetch("20241125.csv")
   .then(r => r.text())
@@ -48,11 +58,7 @@ fetch("20241125.csv")
         rows = results.data;
 
         // 日付降順ソート
-        rows.sort((a,b) => {
-          const dateA = new Date(a['日付']);
-          const dateB = new Date(b['日付']);
-          return dateB - dateA;
-        });
+        rows.sort((a,b) => parseJapaneseDate(b['日付']) - parseJapaneseDate(a['日付']));
 
         render(rows);
       }
