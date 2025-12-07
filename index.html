@@ -24,12 +24,12 @@
     padding: 10px;
     background: #111;
     align-items: center;
-    justify-content: center; /* 中央寄せ */
+    justify-content: center;
   }
 
   input[type="text"] {
-    width: calc(100% - 20px); /* 左右に10pxずつ余白 */
-    max-width: 600px;         /* 任意で最大幅 */
+    width: calc(100% - 20px);
+    max-width: 600px;
     background: #222;
     color: #fff;
     border: 1px solid #333;
@@ -48,17 +48,17 @@
   .row {
     border-bottom: 1px solid #222;
     padding: 8px 0;
-    word-break: break-word; /* 長い文字列を折り返す */
+    word-break: break-word;
   }
 
   .top-line, .bottom-line {
     display: flex;
     justify-content: flex-start;
     align-items: center;
-    flex-wrap: wrap; /* 幅が狭いときは折り返す */
+    flex-wrap: wrap;
   }
 
-  .top-line { gap: 20px; }
+  .top-line { gap: 10px; }
 
   .date {
     color: #aaa;
@@ -71,9 +71,17 @@
   .category {
     color: #ccc;
     font-size: 0.9em;
+    width: 30%;
+    min-width: 100px;
     text-align: left;
-    width: 40%;
-    min-width: 120px;
+  }
+
+  .classification {
+    color: #ccc;
+    font-size: 0.9em;
+    width: 30%;
+    min-width: 100px;
+    text-align: right; /* 右寄せ */
   }
 
   .desc {
@@ -103,7 +111,7 @@
 let rows = [];
 
 /* ✅ CSV自動読込＆日付降順ソート */
-fetch("20241115.csv")
+fetch("20241125.csv") // ← ファイル名を変更
   .then(response => response.text())
   .then(csvText => {
     Papa.parse(csvText, {
@@ -142,6 +150,7 @@ function render(data){
       <div class="top-line">
         <div class="date">${r[0] || ""}</div>
         <div class="category">${r[2] || ""}</div>
+        <div class="classification">${r[4] || ""}</div>
       </div>
       <div class="bottom-line">
         <div class="desc">${r[1] || ""}</div>
