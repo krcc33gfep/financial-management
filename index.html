@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSVビューワー</title>
+
+<!-- ✅ 等幅日本語フォント -->
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+1+Code:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- ✅ Papa Parse（CSVパーサー） -->
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+<style>
+  body {
+    background: #000;
+    color: #fff;
+    font-family: "M PLUS 1 Code", monospace;
+    margin: 0;
+  }
+
+  header {
+    display: flex;
+    padding: 10px;
+    background: #111;
+    align-items: center;
+    justify-content: center;
+  }
+
+  input[type="text"] {
+    width: calc(100% - 20px);
+    max-width: 600px;
+    background: #222;
+    color: #fff;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-family: inherit;
+    font-size: 16px; /* iOSの自動ズーム防止 */
+  }
+
+  .container {
+    padding: 10px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .row {
+    border-bottom: 1px solid #222;
+    padding: 8px 0;
+    word-break: break-word;
+  }
+
+  .top-line, .bottom-line {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .top-line { gap: 10px; }
+
+  .date {
+    color: #aaa;
+    font-size: 0.9em;
+    width: 30%;
+    min-width: 80px;
+    text-align: left;
+  }
+
+  .category {
+    color: #ccc;
+    font-size: 0.9em;
+    width: 30%;
+    min-width: 100px;
+    text-align: left;
+  }
+
+  .classification {
+    color: #ccc;
+    font-size: 0.9em;
+    width: 30%;
+    min-width: 100px;
+    text-align: right; /* 右寄せ */
+  }
+
+  .desc {
+    flex: 1;
+    font-size: 1em;
+    min-width: 100px;
+  }
+
+  .amount {
+    text-align: right;
+    color: #0f0;
+    min-width: 80px;
+    font-size: 1.2em;
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <input id="search" type="text" placeholder="検索...">
+</header>
+
+<div class="container" id="output"></div>
+
+<script>
+let rows = [];
+
+/* ✅ CSV自動読込＆日付降順ソート */
+fetch("20241125.csv") // ← ファイル名を変更
+  .then(response => response.text())
+  .then(csvText => {
+    Papa.parse(csvText, {
+      complete: function(results) {
+        rows = results.data.filter(r => r.length > 1);
+
+        // 日付で新しい順にソート
+        rows.sort((a, b) => {
+          const dateA = new Date(a[0]);
+          const dateB = new Date(b[0]);
+          return dateB - dateA; // 降順
+        });
+
+        render(rows);
+      },
+      skipEmptyLines: true
+    });
+  })
+  .catch(err => console.error("CSVの読み込みに失敗:", err));
+
+/* 🔍 入力のたびに即フィルタ */
+search.addEventListener("input", () => {
+  const kw = search.value.toLowerCase().trim();
+  const filtered = rows.filter(r => r.join(",").toLowerCase().includes(kw));
+  render(filtered);
+});
+
+/* 🧱 表示処理 */
+function render(data){
+  const out = document.getElementById("output");
+  out.innerHTML = "";
+  data.forEach(r=>{
+    const el = document.createElement("div");
+    el.className = "row";
+    el.innerHTML = `
+      <div class="top-line">
+        <div class="date">${r[0] || ""}</div>
+        <div class="category">${r[2] || ""}</div>
+        <div class="classification">${r[4] || ""}</div>
+      </div>
+      <div class="bottom-line">
+        <div class="desc">${r[1] || ""}</div>
+        <div class="amount">${r[3] || ""}</div>
+      </div>
+    `;
+    out.appendChild(el);
+  });
+}
+</script>
+
+</body>
+</html>
