@@ -19,7 +19,7 @@
   /* 上段：日付・カテゴリー・分類 */
   .top-line {
     display: flex;
-    justify-content: space-between; /* 左右を広げる */
+    justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
   }
@@ -36,7 +36,7 @@
     font-size:0.9em;
     width:30%;
     text-align:left; 
-    margin-left:auto;  /* 左右マージンで中央寄せっぽく */
+    margin-left:auto;
     margin-right:auto;
   }
 
@@ -44,10 +44,9 @@
     color:#ccc;
     font-size:0.9em;
     width:30%;
-    text-align:right;  /* 右寄せ */
+    text-align:right;
   }
 
-  /* 下段：メモ・金額 */
   .bottom-line { display:flex; justify-content:flex-start; align-items:center; flex-wrap:wrap; }
   .desc { flex:1; font-size:1em; min-width:100px; }
   .amount { text-align:right; color:#0f0; min-width:80px; font-size:1.2em; font-weight:500; }
@@ -64,14 +63,21 @@
 <script>
 let rows = [];
 
-/* 日本語日付文字列をDateに変換 */
-function parseJapaneseDate(str) {
-  const m = str.match(/(\d+)年(\d+)月(\d+)日/);
-  if (!m) return new Date(0); 
-  const year = parseInt(m[1],10);
-  const month = parseInt(m[2],10) - 1; 
-  const day = parseInt(m[3],10);
+/* ✅ スラッシュ区切りの日付（YYYY/MM/DD）をDateに変換 */
+function parseSlashDate(str) {
+  const m = str.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+  if (!m) return new Date(0);
+  const year = parseInt(m[1], 10);
+  const month = parseInt(m[2], 10) - 1;
+  const day = parseInt(m[3], 10);
   return new Date(year, month, day);
+}
+
+/* ✅ 表示用に「YYYY年MM月DD日」にフォーマット */
+function formatDateDisplay(str) {
+  const m = str.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+  if (!m) return str; // フォーマット不明な場合はそのまま
+  return `${m[1]}年${parseInt(m[2],10)}月${parseInt(m[3],10)}日`;
 }
 
 /* CSV自動読込＆ヘッダー対応＆日付降順ソート */
@@ -84,8 +90,8 @@ fetch("20251208.csv")
       complete: function(results) {
         rows = results.data;
 
-        // 日付降順ソート
-        rows.sort((a,b) => parseJapaneseDate(b['日付']) - parseJapaneseDate(a['日付']));
+        // ✅ 日付降順ソート
+        rows.sort((a,b) => parseSlashDate(b['日付']) - parseSlashDate(a['日付']));
 
         render(rows);
       }
@@ -93,23 +99,27 @@ fetch("20251208.csv")
   })
   .catch(err => console.error("CSVの読み込みに失敗:", err));
 
-/* 検索 */
+/* 🔍 検索 */
 search.addEventListener("input", () => {
   const kw = search.value.toLowerCase().trim();
   const filtered = rows.filter(r => Object.values(r).join(",").toLowerCase().includes(kw));
   render(filtered);
 });
 
-/* 表示処理 */
+/* 🧱 表示処理 */
 function render(data){
   const out = document.getElementById("output");
   out.innerHTML = "";
   data.forEach(r=>{
     const el = document.createElement("div");
     el.className = "row";
+
+    // ✅ 表示時にスラッシュを日本語に変換
+    const displayDate = r['日付'] ? formatDateDisplay(r['日付']) : "";
+
     el.innerHTML = `
       <div class="top-line">
-        <div class="date">${r['日付'] || ""}</div>
+        <div class="date">${displayDate}</div>
         <div class="category">${r['カテゴリ'] || ""}</div>
         <div class="classification">${r['分類'] || ""}</div>
       </div>
@@ -125,4 +135,3 @@ function render(data){
 
 </body>
 </html>
-
