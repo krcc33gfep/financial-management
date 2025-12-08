@@ -55,7 +55,7 @@
 <body>
 
 <header>
-  <input id="search" type="text" placeholder="検索...">
+  <input id="search" type="text" placeholder="検索（例：食費 外食）...">
 </header>
 
 <div class="container" id="output"></div>
@@ -76,7 +76,7 @@ function parseSlashDate(str) {
 /* ✅ 表示用に「YYYY年MM月DD日」にフォーマット */
 function formatDateDisplay(str) {
   const m = str.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
-  if (!m) return str; // フォーマット不明な場合はそのまま
+  if (!m) return str;
   return `${m[1]}年${parseInt(m[2],10)}月${parseInt(m[3],10)}日`;
 }
 
@@ -99,10 +99,13 @@ fetch("20251208.csv")
   })
   .catch(err => console.error("CSVの読み込みに失敗:", err));
 
-/* 🔍 検索 */
+/* 🔍 AND検索対応 */
 search.addEventListener("input", () => {
-  const kw = search.value.toLowerCase().trim();
-  const filtered = rows.filter(r => Object.values(r).join(",").toLowerCase().includes(kw));
+  const keywords = search.value.toLowerCase().trim().split(/\s+/); // 空白区切り（全角・半角対応）
+  const filtered = rows.filter(r => {
+    const text = Object.values(r).join(",").toLowerCase();
+    return keywords.every(kw => text.includes(kw)); // すべて含む（AND条件）
+  });
   render(filtered);
 });
 
@@ -113,10 +116,7 @@ function render(data){
   data.forEach(r=>{
     const el = document.createElement("div");
     el.className = "row";
-
-    // ✅ 表示時にスラッシュを日本語に変換
     const displayDate = r['日付'] ? formatDateDisplay(r['日付']) : "";
-
     el.innerHTML = `
       <div class="top-line">
         <div class="date">${displayDate}</div>
