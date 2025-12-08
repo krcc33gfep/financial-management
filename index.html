@@ -55,7 +55,7 @@
 <body>
 
 <header>
-  <input id="search" type="text" placeholder="検索（例：食費 外食）...">
+  <input id="search" type="text" placeholder="検索（例：2013年 食費 外食）...">
 </header>
 
 <div class="container" id="output"></div>
@@ -99,13 +99,19 @@ fetch("20251208.csv")
   })
   .catch(err => console.error("CSVの読み込みに失敗:", err));
 
-/* 🔍 AND検索対応 */
+/* 🔍 AND検索対応 + 日付の日本語表記も検索対象に含める */
 search.addEventListener("input", () => {
   const keywords = search.value.toLowerCase().trim().split(/\s+/); // 空白区切り（全角・半角対応）
+
   const filtered = rows.filter(r => {
-    const text = Object.values(r).join(",").toLowerCase();
+    const dateDisplay = r['日付'] ? formatDateDisplay(r['日付']) : "";
+    // ✅ 日付（日本語表記）も検索対象に含める
+    const text = (
+      Object.values(r).join(",") + "," + dateDisplay
+    ).toLowerCase();
     return keywords.every(kw => text.includes(kw)); // すべて含む（AND条件）
   });
+
   render(filtered);
 });
 
