@@ -75,7 +75,7 @@ function parseJapaneseDate(str) {
 }
 
 /* CSV自動読込＆ヘッダー対応＆日付降順ソート */
-fetch("20241125.csv")
+fetch("20251208.csv")
   .then(r => r.text())
   .then(csvText => {
     Papa.parse(csvText, {
@@ -125,3 +125,4 @@ function render(data){
 
 </body>
 </html>
+
