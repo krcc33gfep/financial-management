@@ -10,13 +10,43 @@
 
 <style>
   body { background: #000; color: #fff; font-family: "M PLUS 1 Code", monospace; margin:0; }
-  header { display:flex; padding:10px; background:#111; align-items:center; justify-content:center; }
-  input[type="text"] { width: calc(100% - 20px); max-width:600px; background:#222; color:#fff; border:1px solid #333; border-radius:6px; padding:8px 10px; font-size:16px; }
+  header { display:flex; padding:10px; background:#111; align-items:center; justify-content:center; position:relative; }
+
+  /* 🔍 検索ボックス */
+  .search-wrapper {
+    position: relative;
+    width: calc(100% - 20px);
+    max-width: 600px;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    background:#222;
+    color:#fff;
+    border:1px solid #333;
+    border-radius:6px;
+    padding:8px 36px 8px 10px; /* ← 右側に余白を作る */
+    font-size:16px;
+  }
+
+  /* ❌ クリアボタン */
+  .clear-btn {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #aaa;
+    font-size: 18px;
+    cursor: pointer;
+    display: none;
+  }
+  .clear-btn:hover { color: #fff; }
 
   .container { padding:10px; width:100%; box-sizing:border-box; }
   .row { border-bottom:1px solid #222; padding:8px 0; word-break: break-word; }
 
-  /* 上段：日付・カテゴリ・分類 */
   .top-line {
     display: flex;
     justify-content: space-between;
@@ -55,7 +85,11 @@
 <body>
 
 <header>
-  <input id="search" type="text" placeholder="検索（例：2024年 食費 外食）...">
+  <!-- 🔍 検索欄 + ×ボタン -->
+  <div class="search-wrapper">
+    <input id="search" type="text" placeholder="検索（例：2024年 食費 外食）...">
+    <button id="clearBtn" class="clear-btn">&times;</button>
+  </div>
 </header>
 
 <div class="container" id="output"></div>
@@ -63,10 +97,8 @@
 <script>
 let rows = [];
 
-/* ✅ Googleスプレッドシート（CSV出力URL）をここに設定 */
 const csvUrl = "https://docs.google.com/spreadsheets/d/1oJqIz1Rj614hvj-bX5A3jg3uj8Eqxgjvi5do1KYMPds/gviz/tq?tqx=out:csv";
 
-/* ✅ スラッシュ区切りの日付（YYYY/MM/DD）をDateに変換 */
 function parseSlashDate(str) {
   const m = str.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
   if (!m) return new Date(0);
@@ -76,14 +108,12 @@ function parseSlashDate(str) {
   return new Date(year, month, day);
 }
 
-/* ✅ 表示用に「YYYY年MM月DD日」にフォーマット */
 function formatDateDisplay(str) {
   const m = str.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
   if (!m) return str;
   return `${m[1]}年${parseInt(m[2],10)}月${parseInt(m[3],10)}日`;
 }
 
-/* ✅ GoogleシートからCSVをfetch */
 fetch(csvUrl)
   .then(r => r.text())
   .then(csvText => {
@@ -99,9 +129,14 @@ fetch(csvUrl)
   })
   .catch(err => console.error("CSVの読み込みに失敗:", err));
 
-/* 🔍 AND検索対応 + 日付の日本語表記も検索対象に含める */
+/* 🔍 検索イベント */
+const search = document.getElementById("search");
+const clearBtn = document.getElementById("clearBtn");
+
 search.addEventListener("input", () => {
   const keywords = search.value.toLowerCase().trim().split(/\s+/);
+  clearBtn.style.display = search.value ? "block" : "none"; // ← 入力があれば×を表示
+
   const filtered = rows.filter(r => {
     const dateDisplay = r['日付'] ? formatDateDisplay(r['日付']) : "";
     const text = (Object.values(r).join(",") + "," + dateDisplay).toLowerCase();
@@ -110,7 +145,13 @@ search.addEventListener("input", () => {
   render(filtered);
 });
 
-/* 🧱 表示処理 */
+/* ❌ クリアボタン処理 */
+clearBtn.addEventListener("click", () => {
+  search.value = "";
+  clearBtn.style.display = "none";
+  render(rows);
+});
+
 function render(data){
   const out = document.getElementById("output");
   out.innerHTML = "";
