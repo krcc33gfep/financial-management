@@ -25,12 +25,20 @@
     color:#fff;
     border:1px solid #333;
     border-radius:6px;
-    padding:8px 28px 8px 10px; /* ← 右側余白を小さめに戻す */
+    padding:8px 28px 8px 10px; /* 右に少し余白 */
     font-size:16px;
     box-sizing: border-box;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
   }
 
-  /* ❌ クリアボタン（サイズ大きめ・位置調整） */
+  /* ✨ フォーカス時：淡い緑に光る */
+  input[type="text"]:focus {
+    outline: none;
+    border-color: #0f0;
+    box-shadow: 0 0 6px #0f05;
+  }
+
+  /* ❌ クリアボタン */
   .clear-btn {
     position: absolute;
     right: 8px;
@@ -39,7 +47,7 @@
     background: none;
     border: none;
     color: #aaa;
-    font-size: 20px;  /* ← 大きく */
+    font-size: 20px;
     line-height: 1;
     cursor: pointer;
     display: none;
@@ -101,6 +109,7 @@ let rows = [];
 
 const csvUrl = "https://docs.google.com/spreadsheets/d/1oJqIz1Rj614hvj-bX5A3jg3uj8Eqxgjvi5do1KYMPds/gviz/tq?tqx=out:csv";
 
+/* 🔢 日付処理 */
 function parseSlashDate(str) {
   const m = str.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
   if (!m) return new Date(0);
@@ -116,6 +125,7 @@ function formatDateDisplay(str) {
   return `${m[1]}年${parseInt(m[2],10)}月${parseInt(m[3],10)}日`;
 }
 
+/* 🧾 Google Sheets → CSV 読み込み */
 fetch(csvUrl)
   .then(r => r.text())
   .then(csvText => {
@@ -131,6 +141,7 @@ fetch(csvUrl)
   })
   .catch(err => console.error("CSVの読み込みに失敗:", err));
 
+/* 🔍 検索処理 */
 const search = document.getElementById("search");
 const clearBtn = document.getElementById("clearBtn");
 
@@ -146,12 +157,14 @@ search.addEventListener("input", () => {
   render(filtered);
 });
 
+/* ❌ クリアボタン */
 clearBtn.addEventListener("click", () => {
   search.value = "";
   clearBtn.style.display = "none";
   render(rows);
 });
 
+/* 🧱 レンダリング */
 function render(data){
   const out = document.getElementById("output");
   out.innerHTML = "";
