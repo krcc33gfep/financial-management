@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>燃費チェックビューワー</title>
 
-<!-- 読みやすく自然な丸ゴシック系フォント -->
+<!-- 読みやすい日本語フォント -->
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
@@ -71,7 +71,7 @@
     display: grid;
     grid-template-columns: 110px 1fr 1fr 110px;
     align-items: center;
-    font-size:1.05em; /* 全体より少し大きく */
+    font-size:1.05em; /* わずかに拡大 */
     color:#eee;
   }
   .line1 div { text-align: right; }
@@ -86,14 +86,14 @@
     display: grid;
     grid-template-columns: 110px 1fr 1fr 110px;
     align-items: center;
-    font-size:1.05em;
+    font-size:1.15em; /* ← 数字を少し大きく */
     color:#eee;
   }
   .line2 div { text-align: right; }
   .line2 .highlight {
     color:#0f0;
     font-weight:600;
-    font-size:1.1em;
+    font-size:1.1em; /* 燃費をさらに少し強調 */
   }
 
   @media (max-width:600px){
