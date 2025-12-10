@@ -71,35 +71,35 @@
     display: grid;
     grid-template-columns: 110px 1fr 1fr 110px;
     align-items: center;
-    font-size:1.05em;
+    font-size:0.95em; /* ← 少し小さめに調整 */
     color:#eee;
   }
   .line1 div { text-align: right; }
   .line1 div:first-child,
   .line1 div:last-child {
-    color:#aaa;
+    color:#aaa; /* 日付・経過年月を控えめに */
   }
 
   /* 下段（line2） */
   .line2 {
     display: grid;
-    grid-template-columns: 120px 1fr 1fr 120px; /* ← 少し広めで対応 */
+    grid-template-columns: 120px 1fr 1fr 120px;
     align-items: center;
-    font-size:1.3em; /* ← 30%拡大 */
+    font-size:1.3em; /* ← 約30%拡大して主役感を出す */
     color:#eee;
   }
   .line2 div { text-align: right; }
   .line2 .highlight {
     color:#0f0;
-    font-weight:600;
-    font-size:1.1em;
+    font-weight:600; /* ← 太字＆色で自然に強調 */
+    font-size:1em;   /* ← 行全体と同じサイズ */
   }
 
   @media (max-width:600px){
     body { font-size:15px; }
     #sortButtons button { font-size:15px; }
-    /* スマホでも1.3em維持（以前の制限を解除） */
-    .line2 { font-size:1.3em; grid-template-columns: 120px 1fr 1fr 120px; }
+    .line1 { font-size:0.9em; }
+    .line2 { font-size:1.2em; grid-template-columns: 110px 1fr 1fr 110px; }
   }
 </style>
 </head>
