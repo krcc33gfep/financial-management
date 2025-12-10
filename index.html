@@ -3,190 +3,189 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>燃費チェックビューワー</title>
+<title>家計簿ビューワー</title>
 
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1+Code:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
 <style>
-  body {
-    background:#000;
-    color:#fff;
-    font-family:"M PLUS 1 Code", monospace;
-    margin:0;
+  body { background: #000; color: #fff; font-family: "M PLUS 1 Code", monospace; margin:0; }
+  header { display:flex; padding:10px; background:#111; align-items:center; justify-content:center; position:relative; }
+
+  /* 🔍 検索ボックス */
+  .search-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
   }
 
-  header {
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:10px;
-    background:#111;
-    flex-wrap:wrap;
-    border-bottom:1px solid #222;
-  }
-
-  label { margin-right:6px; }
-
-  select, button {
+  input[type="text"] {
+    width: 100%;
     background:#222;
     color:#fff;
     border:1px solid #333;
     border-radius:6px;
-    padding:6px 10px;
-    font-size:14px;
-    margin:4px;
+    padding:8px 28px 8px 10px;
+    font-size:16px;
+    box-sizing: border-box;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
   }
 
-  button {
-    cursor:pointer;
-    transition:background 0.2s;
+  /* ✨ フォーカス時：淡い緑に光る */
+  input[type="text"]:focus {
+    outline: none;
+    border-color: #0f0;
+    box-shadow: 0 0 6px #0f05;
   }
 
-  button:hover {
-    background:#0f0;
-    color:#000;
+  /* ❌ クリアボタン（少し左に寄せた版） */
+  .clear-btn {
+    position: absolute;
+    right: 22px; /* ← ここを調整（8px→22px） */
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #aaa;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    display: none;
+    padding: 0;
   }
+  .clear-btn:hover { color: #fff; }
 
-  .container {
-    padding:10px;
-    box-sizing:border-box;
-  }
+  .container { padding:10px; width:100%; box-sizing:border-box; }
+  .row { border-bottom:1px solid #222; padding:8px 0; word-break: break-word; }
 
-  .row {
-    border-bottom:1px solid #222;
-    padding:6px 4px;
-    line-height:1.4em;
-  }
-
-  /* 1行目 */
-  .line1 {
-    display: grid;
-    grid-template-columns: 130px 1fr 1fr 100px; /* 指定の幅に変更 */
+  .top-line {
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-    font-size:0.95em;
-    color:#eee;
+    flex-wrap: wrap;
   }
-  .line1 div { text-align: right; }
 
-  /* 2行目 */
-  .line2 {
-    display: grid;
-    grid-template-columns: 130px 1fr 1fr 100px; /* 指定の幅に変更 */
-    align-items: center;
-    font-size:0.95em;
-    color:#eee;
+  .date {
+    color:#aaa;
+    font-size:0.9em;
+    text-align:left;
+    width:30%;
   }
-  .line2 div { text-align: right; }
-  .line2 .highlight { color:#0f0; font-weight:500; }
 
-  @media (max-width:600px){
-    .line1, .line2 { font-size:0.9em; }
+  .category {
+    color:#ccc;
+    font-size:0.9em;
+    width:30%;
+    text-align:left; 
+    margin-left:auto;
+    margin-right:auto;
   }
+
+  .classification {
+    color:#ccc;
+    font-size:0.9em;
+    width:30%;
+    text-align:right;
+  }
+
+  .bottom-line { display:flex; justify-content:flex-start; align-items:center; flex-wrap:wrap; }
+  .desc { flex:1; font-size:1em; min-width:100px; }
+  .amount { text-align:right; color:#0f0; min-width:80px; font-size:1.2em; font-weight:500; }
 </style>
 </head>
-
 <body>
 
 <header>
-  <label for="sortSelect">並び替え：</label>
-  <select id="sortSelect">
-    <option value="日付">日付</option>
-    <option value="数量">数量</option>
-    <option value="金額">金額</option>
-    <option value="単価">単価</option>
-    <option value="燃費">燃費</option>
-  </select>
-  <button id="toggleOrder">⬇︎ 降順</button>
+  <div class="search-wrapper">
+    <input id="search" type="text" placeholder="検索（例：2024年 食費 外食）...">
+    <button id="clearBtn" class="clear-btn">&times;</button>
+  </div>
 </header>
 
-<div class="container" id="output">読み込み中...</div>
+<div class="container" id="output"></div>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
+let rows = [];
 
-  let rows = [];
-  let sortKey = "日付";
-  let sortAsc = false;
+const csvUrl = "https://docs.google.com/spreadsheets/d/1oJqIz1Rj614hvj-bX5A3jg3uj8Eqxgjvi5do1KYMPds/gviz/tq?tqx=out:csv";
 
-  const csvUrl = "https://docs.google.com/spreadsheets/d/1YKMiMq2GpMAR3cqvqeiklqtGuQa8JJx4oO5YnpzxKso/gviz/tq?tqx=out:csv&sheet=燃費";
+/* 🔢 日付処理 */
+function parseSlashDate(str) {
+  const m = str.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+  if (!m) return new Date(0);
+  const year = parseInt(m[1], 10);
+  const month = parseInt(m[2], 10) - 1;
+  const day = parseInt(m[3], 10);
+  return new Date(year, month, day);
+}
 
-  function formatDateDisplay(str) {
-    const m = str.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
-    if (!m) return str;
-    return `${m[1]}年${parseInt(m[2])}月${parseInt(m[3])}日`;
-  }
+function formatDateDisplay(str) {
+  const m = str.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+  if (!m) return str;
+  return `${m[1]}年${parseInt(m[2],10)}月${parseInt(m[3],10)}日`;
+}
 
-  function parseSlashDate(str) {
-    const m = str.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
-    if (!m) return new Date(0);
-    return new Date(+m[1], +m[2]-1, +m[3]);
-  }
-
-  fetch(csvUrl)
-    .then(r => r.text())
-    .then(csvText => {
-      Papa.parse(csvText, {
-        header: true,
-        skipEmptyLines: true,
-        complete: results => {
-          rows = results.data;
-          sortAndRender();
-        }
-      });
-    })
-    .catch(err => {
-      document.getElementById("output").innerHTML = "❌ データの読み込みに失敗しました。";
-      console.error(err);
+/* 🧾 Google Sheets → CSV 読み込み */
+fetch(csvUrl)
+  .then(r => r.text())
+  .then(csvText => {
+    Papa.parse(csvText, {
+      header: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        rows = results.data;
+        rows.sort((a,b) => parseSlashDate(b['日付']) - parseSlashDate(a['日付']));
+        render(rows);
+      }
     });
+  })
+  .catch(err => console.error("CSVの読み込みに失敗:", err));
 
-  function sortAndRender() {
-    const key = sortKey;
-    rows.sort((a, b) => {
-      let av = a[key] || "", bv = b[key] || "";
-      if (key === "日付") { av = parseSlashDate(av); bv = parseSlashDate(bv); }
-      else { av = parseFloat(av) || 0; bv = parseFloat(bv) || 0; }
-      return sortAsc ? av - bv : bv - av;
-    });
-    render(rows);
-  }
+/* 🔍 検索処理 */
+const search = document.getElementById("search");
+const clearBtn = document.getElementById("clearBtn");
 
-  function render(data) {
-    const out = document.getElementById("output");
-    out.innerHTML = "";
-    data.forEach(r => {
-      const el = document.createElement("div");
-      el.className = "row";
-      el.innerHTML = `
-        <div class="line1">
-          <div>${formatDateDisplay(r["日付"] || "")}</div>
-          <div>${r["ODO"] || ""}km</div>
-          <div>${r["TRIP"] || ""}km</div>
-          <div>${r["経過年月"] || ""}</div>
-        </div>
-        <div class="line2">
-          <div>${r["数量"] || ""}L</div>
-          <div>${r["金額"] || ""}円</div>
-          <div>${r["単価"] || ""}円/L</div>
-          <div class="highlight">${r["燃費"] || ""}km/L</div>
-        </div>
-      `;
-      out.appendChild(el);
-    });
-  }
+search.addEventListener("input", () => {
+  const keywords = search.value.toLowerCase().trim().split(/\s+/);
+  clearBtn.style.display = search.value ? "block" : "none";
 
-  document.getElementById("sortSelect").addEventListener("change", e => {
-    sortKey = e.target.value;
-    sortAndRender();
+  const filtered = rows.filter(r => {
+    const dateDisplay = r['日付'] ? formatDateDisplay(r['日付']) : "";
+    const text = (Object.values(r).join(",") + "," + dateDisplay).toLowerCase();
+    return keywords.every(kw => text.includes(kw));
   });
-
-  document.getElementById("toggleOrder").addEventListener("click", () => {
-    sortAsc = !sortAsc;
-    document.getElementById("toggleOrder").textContent = sortAsc ? "⬆︎ 昇順" : "⬇︎ 降順";
-    sortAndRender();
-  });
-
+  render(filtered);
 });
+
+/* ❌ クリアボタン */
+clearBtn.addEventListener("click", () => {
+  search.value = "";
+  clearBtn.style.display = "none";
+  render(rows);
+});
+
+/* 🧱 レンダリング */
+function render(data){
+  const out = document.getElementById("output");
+  out.innerHTML = "";
+  data.forEach(r=>{
+    const el = document.createElement("div");
+    el.className = "row";
+    const displayDate = r['日付'] ? formatDateDisplay(r['日付']) : "";
+    el.innerHTML = `
+      <div class="top-line">
+        <div class="date">${displayDate}</div>
+        <div class="category">${r['カテゴリ'] || ""}</div>
+        <div class="classification">${r['分類'] || ""}</div>
+      </div>
+      <div class="bottom-line">
+        <div class="desc">${r['メモ'] || ""}</div>
+        <div class="amount">${r['金額'] || ""}</div>
+      </div>
+    `;
+    out.appendChild(el);
+  });
+}
 </script>
 
 </body>
