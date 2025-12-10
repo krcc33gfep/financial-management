@@ -14,46 +14,38 @@
     color:#fff;
     font-family:"M PLUS 1 Code", monospace;
     margin:0;
-    font-size:14px;
   }
 
   header {
-    background:#111;
-    border-bottom:1px solid #222;
-    padding:10px;
-  }
-
-  /* 並び替えボタンエリア */
-  #sortButtons {
     display:flex;
+    align-items:center;
     justify-content:center;
+    padding:10px;
+    background:#111;
     flex-wrap:wrap;
-    gap:4px;
-    font-family:"M PLUS 1 Code", monospace;
+    border-bottom:1px solid #222;
   }
 
-  #sortButtons button {
-    flex:1;
-    min-width:60px;
+  label { margin-right:6px; }
+
+  select, button {
     background:#222;
     color:#fff;
-    border:1px solid #555;      /* 枠線 */
+    border:1px solid #333;
     border-radius:6px;
-    padding:4px 8px;
+    padding:6px 10px;
     font-size:14px;
-    line-height:1;
-    height:30px;
-    box-sizing:border-box;
-    cursor:pointer;
-    transition:border-color 0.2s, color 0.2s;
-    font-family:"M PLUS 1 Code", monospace;
+    margin:4px;
   }
 
-  /* hover 時は枠だけ光る */
-  #sortButtons button:hover {
-    border-color:#0f0;  /* 枠だけ緑に */
-    color:#0f0;         /* 文字も緑に変化 */
-    background:#222;    /* 背景はそのまま */
+  button {
+    cursor:pointer;
+    transition:background 0.2s;
+  }
+
+  button:hover {
+    background:#0f0;
+    color:#000;
   }
 
   .container {
@@ -67,27 +59,26 @@
     line-height:1.4em;
   }
 
+  /* 1行目 */
   .line1 {
     display: grid;
-    grid-template-columns: 110px 1fr 1fr 110px;
+    grid-template-columns: 130px 1fr 1fr 100px; /* 指定の幅に変更 */
     align-items: center;
     font-size:0.95em;
     color:#eee;
   }
   .line1 div { text-align: right; }
 
+  /* 2行目 */
   .line2 {
     display: grid;
-    grid-template-columns: 110px 1fr 1fr 110px;
+    grid-template-columns: 130px 1fr 1fr 100px; /* 指定の幅に変更 */
     align-items: center;
     font-size:0.95em;
     color:#eee;
   }
   .line2 div { text-align: right; }
-  .line2 .highlight {
-    color:#0f0;
-    font-weight:500;
-  }
+  .line2 .highlight { color:#0f0; font-weight:500; }
 
   @media (max-width:600px){
     .line1, .line2 { font-size:0.9em; }
@@ -98,13 +89,15 @@
 <body>
 
 <header>
-  <div id="sortButtons">
-    <button data-key="日付">日付 ▼</button>
-    <button data-key="数量">数量</button>
-    <button data-key="金額">金額</button>
-    <button data-key="単価">単価</button>
-    <button data-key="燃費">燃費</button>
-  </div>
+  <label for="sortSelect">並び替え：</label>
+  <select id="sortSelect">
+    <option value="日付">日付</option>
+    <option value="数量">数量</option>
+    <option value="金額">金額</option>
+    <option value="単価">単価</option>
+    <option value="燃費">燃費</option>
+  </select>
+  <button id="toggleOrder">⬇︎ 降順</button>
 </header>
 
 <div class="container" id="output">読み込み中...</div>
@@ -182,25 +175,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 並び替えボタン処理
-  const buttons = document.querySelectorAll("#sortButtons button");
-  buttons.forEach(btn => {
-    btn.addEventListener("click", () => {
-      const key = btn.dataset.key;
-      if (sortKey === key) sortAsc = !sortAsc;
-      else sortAsc = false;
-      sortKey = key;
+  document.getElementById("sortSelect").addEventListener("change", e => {
+    sortKey = e.target.value;
+    sortAndRender();
+  });
 
-      buttons.forEach(b => {
-        if (b.dataset.key === sortKey) {
-          b.textContent = key + (sortAsc ? " ▲" : " ▼");
-        } else {
-          b.textContent = b.dataset.key;
-        }
-      });
-
-      sortAndRender();
-    });
+  document.getElementById("toggleOrder").addEventListener("click", () => {
+    sortAsc = !sortAsc;
+    document.getElementById("toggleOrder").textContent = sortAsc ? "⬆︎ 昇順" : "⬇︎ 降順";
+    sortAndRender();
   });
 
 });
