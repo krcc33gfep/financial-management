@@ -100,6 +100,10 @@
     <input id="search" type="text" placeholder="検索（例：2024年 食費 外食）...">
     <button id="clearBtn" class="clear-btn">&times;</button>
   </div>
+  <div id="lastUpdate" style="text-align:center; color:#888; font-size:0.9em; margin-top:6px;">
+  更新情報を取得中...
+</div>
+
 </header>
 
 <div class="container" id="output"></div>
@@ -186,7 +190,17 @@ function render(data){
     out.appendChild(el);
   });
 }
+  const infoUrl = "https://script.google.com/macros/s/AKfycbzVoj1xsiHPYXumqXCD9F12LRneSiVCUtfs0zIZ54kH0fiSsFzyr-3nMDJv_rxXJhzQSQ/exec; // ← あなたのGAS URL
+
+fetch(infoUrl)
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById("lastUpdate").textContent = `最終更新：${data.updated}`;
+  })
+  .catch(err => console.error("更新時刻の取得失敗:", err));
+
 </script>
 
 </body>
 </html>
+
