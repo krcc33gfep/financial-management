@@ -102,11 +102,11 @@ let rows = [];
 
 const csvUrl = "docs.google.com";
 
-/* 🔢 日付処理 */
+/* 🔢 日付処理 (修正版) */
 function parseSlashDate(str) {
   const m = str.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
   if (!m) return new Date(0);
-  // **正しい修正**: キャプチャグループ m[1], m[2], m[3] を参照
+  // 正しい参照方法: 配列のインデックスを使用
   const year = parseInt(m[1], 10);
   const month = parseInt(m[2], 10) - 1; // 月は0から始まるため-1
   const day = parseInt(m[3], 10);
@@ -116,7 +116,7 @@ function parseSlashDate(str) {
 function formatDateDisplay(str) {
   const m = str.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
   if (!m) return str;
-  // **正しい修正**: キャプチャグループ m[1], m[2], m[3] を参照
+  // 正しい参照方法: 配列のインデックスを使用
   return `${m[1]}年${parseInt(m[2],10)}月${parseInt(m[3],10)}日`;
 }
 
