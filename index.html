@@ -106,7 +106,7 @@ const csvUrl = "docs.google.com";
 function parseSlashDate(str) {
   const m = str.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
   if (!m) return new Date(0);
-  // 修正箇所: m[1], m[2]-1, m[3] を正しく参照するように変更
+  // 修正後: 正規表現のキャプチャグループを正しく参照 (インデックス 1, 2, 3)
   const year = parseInt(m[1], 10);
   const month = parseInt(m[2], 10) - 1; // 月は0から始まるため-1
   const day = parseInt(m[3], 10);
@@ -116,7 +116,7 @@ function parseSlashDate(str) {
 function formatDateDisplay(str) {
   const m = str.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
   if (!m) return str;
-  // 修正箇所: m[1], m[2], m[3] を正しく参照するように変更
+  // 修正後: 正規表現のキャプチャグループを正しく参照 (インデックス 1, 2, 3)
   return `${m[1]}年${parseInt(m[2],10)}月${parseInt(m[3],10)}日`;
 }
 
