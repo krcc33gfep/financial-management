@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -142,6 +143,13 @@ fetch(csvUrl)
       skipEmptyLines: true,
       complete: function(results) {
         rows = results.data;
+
+        /* 🔍 検索用テキストをあらかじめ作成 */
+        rows.forEach(r => {
+          const dateDisplay = r['日付'] ? formatDateDisplay(r['日付']) : "";
+          r._searchText = (Object.values(r).join(",") + "," + dateDisplay).toLowerCase();
+        });
+
         rows.sort((a,b) => parseSlashDate(b['日付']) - parseSlashDate(a['日付']));
         render(rows);
       }
@@ -158,10 +166,9 @@ search.addEventListener("input", () => {
   clearBtn.style.display = search.value ? "block" : "none";
 
   const filtered = rows.filter(r => {
-    const dateDisplay = r['日付'] ? formatDateDisplay(r['日付']) : "";
-    const text = (Object.values(r).join(",") + "," + dateDisplay).toLowerCase();
-    return keywords.every(kw => text.includes(kw));
+    return keywords.every(kw => r._searchText.includes(kw));
   });
+
   render(filtered);
 });
 
@@ -176,12 +183,16 @@ clearBtn.addEventListener("click", () => {
 function render(data){
   const out = document.getElementById("output");
   out.innerHTML = "";
+
+  const fragment = document.createDocumentFragment();
+
   data.forEach(r=>{
     const el = document.createElement("div");
     el.className = "row";
     const displayDate = r['日付'] ? formatDateDisplay(r['日付']) : "";
     const amount = parseFloat(r['金額']) || 0;
     const amountClass = amount > 0 ? "plus" : "minus";
+
     el.innerHTML = `
       <div class="top-line">
         <div class="date">${displayDate}</div>
@@ -193,8 +204,11 @@ function render(data){
         <div class="amount ${amountClass}">${r['金額'] || ""}</div>
       </div>
     `;
-    out.appendChild(el);
+
+    fragment.appendChild(el);
   });
+
+  out.appendChild(fragment);
 }
 
 /* ⏰ 更新日時の取得 */
@@ -210,7 +224,4 @@ fetch(infoUrl)
 
 </body>
 </html>
-
-
-
-
+```
