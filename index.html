@@ -114,6 +114,7 @@
 
 <script>
 let rows = [];
+let searchData = [];
 
 const csvUrl = "https://docs.google.com/spreadsheets/d/1oJqIz1Rj614hvj-bX5A3jg3uj8Eqxgjvi5do1KYMPds/gviz/tq?tqx=out:csv";
 
@@ -143,13 +144,20 @@ fetch(csvUrl)
       complete: function(results) {
         rows = results.data;
 
-        /* 🔍 検索用テキストをあらかじめ作成 */
-        rows.forEach(r => {
+        /* 🔍 検索用データを読み込み時に一度だけ作成 */
+        searchData = rows.map(r => {
           const dateDisplay = r['日付'] ? formatDateDisplay(r['日付']) : "";
-          r._searchText = (Object.values(r).join(",") + "," + dateDisplay).toLowerCase();
+          const searchText = (Object.values(r).join(",") + "," + dateDisplay).toLowerCase();
+
+          return {
+            row: r,
+            dateDisplay: dateDisplay,
+            searchText: searchText
+          };
         });
 
         rows.sort((a,b) => parseSlashDate(b['日付']) - parseSlashDate(a['日付']));
+
         render(rows);
       }
     });
@@ -164,8 +172,12 @@ search.addEventListener("input", () => {
   const keywords = search.value.toLowerCase().trim().split(/\s+/);
   clearBtn.style.display = search.value ? "block" : "none";
 
-  const filtered = rows.filter(r => {
-    return keywords.every(kw => r._searchText.includes(kw));
+  const filtered = [];
+
+  searchData.forEach(item => {
+    if (keywords.every(kw => item.searchText.includes(kw))) {
+      filtered.push(item.row);
+    }
   });
 
   render(filtered);
@@ -181,33 +193,30 @@ clearBtn.addEventListener("click", () => {
 /* 🧱 レンダリング */
 function render(data){
   const out = document.getElementById("output");
-  out.innerHTML = "";
 
-  const fragment = document.createDocumentFragment();
+  let html = "";
 
   data.forEach(r=>{
-    const el = document.createElement("div");
-    el.className = "row";
     const displayDate = r['日付'] ? formatDateDisplay(r['日付']) : "";
     const amount = parseFloat(r['金額']) || 0;
     const amountClass = amount > 0 ? "plus" : "minus";
 
-    el.innerHTML = `
-      <div class="top-line">
-        <div class="date">${displayDate}</div>
-        <div class="category">${r['カテゴリ'] || ""}</div>
-        <div class="classification">${r['分類'] || ""}</div>
-      </div>
-      <div class="bottom-line">
-        <div class="desc">${r['メモ'] || ""}</div>
-        <div class="amount ${amountClass}">${r['金額'] || ""}</div>
+    html += `
+      <div class="row">
+        <div class="top-line">
+          <div class="date">${displayDate}</div>
+          <div class="category">${r['カテゴリ'] || ""}</div>
+          <div class="classification">${r['分類'] || ""}</div>
+        </div>
+        <div class="bottom-line">
+          <div class="desc">${r['メモ'] || ""}</div>
+          <div class="amount ${amountClass}">${r['金額'] || ""}</div>
+        </div>
       </div>
     `;
-
-    fragment.appendChild(el);
   });
 
-  out.appendChild(fragment);
+  out.innerHTML = html;
 }
 
 /* ⏰ 更新日時の取得 */
