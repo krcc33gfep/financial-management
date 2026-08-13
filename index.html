@@ -114,6 +114,7 @@
 
 <script>
 let rows = [];
+let debounceTimer;
 
 const csvUrl = "https://docs.google.com/spreadsheets/d/1oJqIz1Rj614hvj-bX5A3jg3uj8Eqxgjvi5do1KYMPds/gviz/tq?tqx=out:csv";
 
@@ -149,20 +150,23 @@ fetch(csvUrl)
   })
   .catch(err => console.error("CSVの読み込みに失敗:", err));
 
-/* 🔍 検索処理 */
+/* 🔍 検索処理（デバウンス追加） */
 const search = document.getElementById("search");
 const clearBtn = document.getElementById("clearBtn");
 
 search.addEventListener("input", () => {
-  const keywords = search.value.toLowerCase().trim().split(/\s+/);
   clearBtn.style.display = search.value ? "block" : "none";
 
-  const filtered = rows.filter(r => {
-    const dateDisplay = r['日付'] ? formatDateDisplay(r['日付']) : "";
-    const text = (Object.values(r).join(",") + "," + dateDisplay).toLowerCase();
-    return keywords.every(kw => text.includes(kw));
-  });
-  render(filtered);
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    const keywords = search.value.toLowerCase().trim().split(/\s+/);
+    const filtered = rows.filter(r => {
+      const dateDisplay = r['日付'] ? formatDateDisplay(r['日付']) : "";
+      const text = (Object.values(r).join(",") + "," + dateDisplay).toLowerCase();
+      return keywords.every(kw => text.includes(kw));
+    });
+    render(filtered);
+  }, 300);
 });
 
 /* ❌ クリアボタン */
@@ -172,10 +176,11 @@ clearBtn.addEventListener("click", () => {
   render(rows);
 });
 
-/* 🧱 レンダリング */
+/* 🧱 レンダリング（DocumentFragmentによる高速化） */
 function render(data){
   const out = document.getElementById("output");
-  out.innerHTML = "";
+  const fragment = document.createDocumentFragment();
+
   data.forEach(r=>{
     const el = document.createElement("div");
     el.className = "row";
@@ -193,8 +198,11 @@ function render(data){
         <div class="amount ${amountClass}">${r['金額'] || ""}</div>
       </div>
     `;
-    out.appendChild(el);
+    fragment.appendChild(el);
   });
+
+  out.innerHTML = "";
+  out.appendChild(fragment);
 }
 
 /* ⏰ 更新日時の取得 */
@@ -210,6 +218,3 @@ fetch(infoUrl)
 
 </body>
 </html>
-
-
-
