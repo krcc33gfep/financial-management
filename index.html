@@ -134,41 +134,16 @@ function formatDateDisplay(str) {
 }
 
 /* 🧾 Google Sheets → CSV 読み込み */
-console.time("① Google SheetsからCSV取得");
-
 fetch(csvUrl)
-  .then(r => {
-    console.timeEnd("① Google SheetsからCSV取得");
-
-    console.time("② CSVテキスト取得");
-    return r.text();
-  })
+  .then(r => r.text())
   .then(csvText => {
-    console.timeEnd("② CSVテキスト取得");
-
-    console.time("③ PapaParse CSV解析");
-
     Papa.parse(csvText, {
       header: true,
       skipEmptyLines: true,
       complete: function(results) {
-
-        console.timeEnd("③ PapaParse CSV解析");
-
-        console.log("CSVデータ件数:", results.data.length);
-
-        console.time("④ 日付ソート");
-
         rows = results.data;
         rows.sort((a,b) => parseSlashDate(b['日付']) - parseSlashDate(a['日付']));
-
-        console.timeEnd("④ 日付ソート");
-
-        console.time("⑤ 初回render");
-
         render(rows);
-
-        console.timeEnd("⑤ 初回render");
       }
     });
   })
@@ -179,110 +154,62 @@ const search = document.getElementById("search");
 const clearBtn = document.getElementById("clearBtn");
 
 search.addEventListener("input", () => {
-
-  console.time("⑥ 検索全体");
-
   const keywords = search.value.toLowerCase().trim().split(/\s+/);
   clearBtn.style.display = search.value ? "block" : "none";
-
-  console.time("⑦ 検索フィルタ");
 
   const filtered = rows.filter(r => {
     const dateDisplay = r['日付'] ? formatDateDisplay(r['日付']) : "";
     const text = (Object.values(r).join(",") + "," + dateDisplay).toLowerCase();
     return keywords.every(kw => text.includes(kw));
   });
-
-  console.timeEnd("⑦ 検索フィルタ");
-
-  console.log("検索文字:", search.value);
-  console.log("検索結果件数:", filtered.length);
-
-  console.time("⑧ 検索後render");
-
   render(filtered);
-
-  console.timeEnd("⑧ 検索後render");
-  console.timeEnd("⑥ 検索全体");
 });
 
 /* ❌ クリアボタン */
 clearBtn.addEventListener("click", () => {
-
-  console.time("⑨ クリアボタン");
-
   search.value = "";
   clearBtn.style.display = "none";
   render(rows);
-
-  console.timeEnd("⑨ クリアボタン");
 });
 
 /* 🧱 レンダリング */
 function render(data){
-
-  console.time("render内部");
-
   const out = document.getElementById("output");
-
-  /*
-   * 今回の変更箇所
-   * 1件ずつDOMへ追加せず、HTMLをまとめて作成して
-   * 最後に一度だけ画面へ反映する
-   */
-
-  let html = "";
-
+  out.innerHTML = "";
   data.forEach(r=>{
+    const el = document.createElement("div");
+    el.className = "row";
     const displayDate = r['日付'] ? formatDateDisplay(r['日付']) : "";
     const amount = parseFloat(r['金額']) || 0;
     const amountClass = amount > 0 ? "plus" : "minus";
-
-    html += `
-      <div class="row">
-        <div class="top-line">
-          <div class="date">${displayDate}</div>
-          <div class="category">${r['カテゴリ'] || ""}</div>
-          <div class="classification">${r['分類'] || ""}</div>
-        </div>
-        <div class="bottom-line">
-          <div class="desc">${r['メモ'] || ""}</div>
-          <div class="amount ${amountClass}">${r['金額'] || ""}</div>
-        </div>
+    el.innerHTML = `
+      <div class="top-line">
+        <div class="date">${displayDate}</div>
+        <div class="category">${r['カテゴリ'] || ""}</div>
+        <div class="classification">${r['分類'] || ""}</div>
+      </div>
+      <div class="bottom-line">
+        <div class="desc">${r['メモ'] || ""}</div>
+        <div class="amount ${amountClass}">${r['金額'] || ""}</div>
       </div>
     `;
+    out.appendChild(el);
   });
-
-  console.time("render① HTMLを画面へ反映");
-
-  out.innerHTML = html;
-
-  console.timeEnd("render① HTMLを画面へ反映");
-
-  console.timeEnd("render内部");
 }
 
 /* ⏰ 更新日時の取得 */
 const infoUrl = "https://script.google.com/macros/s/AKfycbztyxbPuL2IJYrC1b51oLnriV1Ms8n8uTdHKuyiJUNTlER3hULUxyKnNPSXjM9rxdrwaA/exec";
 
-console.time("⑩ 更新日時取得");
-
 fetch(infoUrl)
   .then(res => res.json())
   .then(data => {
-
-    console.timeEnd("⑩ 更新日時取得");
-
     document.getElementById("lastUpdate").textContent = `最終更新日時：${data.updated}`;
   })
-  .catch(err => {
-
-    console.timeEnd("⑩ 更新日時取得");
-
-    console.error("更新時刻の取得失敗:", err);
-  });
+  .catch(err => console.error("更新時刻の取得失敗:", err));
 </script>
 
 </body>
 </html>
-```
+
+
+
