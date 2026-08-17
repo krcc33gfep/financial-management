@@ -149,20 +149,25 @@ fetch(csvUrl)
   })
   .catch(err => console.error("CSVの読み込みに失敗:", err));
 
-/* 🔍 検索処理（即時反応型） */
+/* 🔍 検索処理（エンターキー押下時のみ実行） */
 const search = document.getElementById("search");
 const clearBtn = document.getElementById("clearBtn");
 
 search.addEventListener("input", () => {
   clearBtn.style.display = search.value ? "block" : "none";
+  // ※入カ中は何もしないため軽快に動作します
+});
 
-  const keywords = search.value.toLowerCase().trim().split(/\s+/);
-  const filtered = rows.filter(r => {
-    const dateDisplay = r['日付'] ? formatDateDisplay(r['日付']) : "";
-    const text = (Object.values(r).join(",") + "," + dateDisplay).toLowerCase();
-    return keywords.every(kw => text.includes(kw));
-  });
-  render(filtered);
+search.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    const keywords = search.value.toLowerCase().trim().split(/\s+/);
+    const filtered = rows.filter(r => {
+      const dateDisplay = r['日付'] ? formatDateDisplay(r['日付']) : "";
+      const text = (Object.values(r).join(",") + "," + dateDisplay).toLowerCase();
+      return keywords.every(kw => text.includes(kw));
+    });
+    render(filtered);
+  }
 });
 
 /* ❌ クリアボタン */
@@ -172,7 +177,7 @@ clearBtn.addEventListener("click", () => {
   render(rows);
 });
 
-/* 🧱 レンダリング */
+/* 🧱 レンダリング（DocumentFragmentによる高速化） */
 function render(data){
   const out = document.getElementById("output");
   const fragment = document.createDocumentFragment();
