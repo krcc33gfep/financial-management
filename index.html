@@ -114,7 +114,6 @@
 
 <script>
 let rows = [];
-let debounceTimer;
 
 const csvUrl = "https://docs.google.com/spreadsheets/d/1oJqIz1Rj614hvj-bX5A3jg3uj8Eqxgjvi5do1KYMPds/gviz/tq?tqx=out:csv";
 
@@ -150,23 +149,20 @@ fetch(csvUrl)
   })
   .catch(err => console.error("CSVの読み込みに失敗:", err));
 
-/* 🔍 検索処理（デバウンス追加） */
+/* 🔍 検索処理（即時反応型） */
 const search = document.getElementById("search");
 const clearBtn = document.getElementById("clearBtn");
 
 search.addEventListener("input", () => {
   clearBtn.style.display = search.value ? "block" : "none";
 
-  clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(() => {
-    const keywords = search.value.toLowerCase().trim().split(/\s+/);
-    const filtered = rows.filter(r => {
-      const dateDisplay = r['日付'] ? formatDateDisplay(r['日付']) : "";
-      const text = (Object.values(r).join(",") + "," + dateDisplay).toLowerCase();
-      return keywords.every(kw => text.includes(kw));
-    });
-    render(filtered);
-  }, 300);
+  const keywords = search.value.toLowerCase().trim().split(/\s+/);
+  const filtered = rows.filter(r => {
+    const dateDisplay = r['日付'] ? formatDateDisplay(r['日付']) : "";
+    const text = (Object.values(r).join(",") + "," + dateDisplay).toLowerCase();
+    return keywords.every(kw => text.includes(kw));
+  });
+  render(filtered);
 });
 
 /* ❌ クリアボタン */
@@ -176,7 +172,7 @@ clearBtn.addEventListener("click", () => {
   render(rows);
 });
 
-/* 🧱 レンダリング（DocumentFragmentによる高速化） */
+/* 🧱 レンダリング */
 function render(data){
   const out = document.getElementById("output");
   const fragment = document.createDocumentFragment();
