@@ -98,6 +98,14 @@
     font-size:0.75em;
     margin-top:6px;
   }
+
+  /* 読み込み状況 */
+  #loadStatus {
+    text-align:center;
+    color:#888;
+    font-size:0.75em;
+    padding:12px 0 20px;
+  }
 </style>
 </head>
 <body>
@@ -111,9 +119,17 @@
 </header>
 
 <div class="container" id="output"></div>
+<div id="loadStatus"></div>
 
 <script>
 let rows = [];
+
+/* 1回に画面表示する件数 */
+const PAGE_SIZE = 1000;
+
+/* 現在表示対象になっているデータ */
+let currentData = [];
+let displayedCount = 0;
 
 const csvUrl = "https://docs.google.com/spreadsheets/d/1oJqIz1Rj614hvj-bX5A3jg3uj8Eqxgjvi5do1KYMPds/gviz/tq?tqx=out:csv";
 
@@ -133,6 +149,19 @@ function formatDateDisplay(str) {
   return `${m[1]}年${parseInt(m[2],10)}月${parseInt(m[3],10)}日`;
 }
 
+/* 🔎 検索用文字列を最初に一度だけ作成 */
+let searchIndex = new Map();
+
+function createSearchIndex() {
+  searchIndex = new Map();
+
+  rows.forEach(r => {
+    const dateDisplay = r['日付'] ? formatDateDisplay(r['日付']) : "";
+    const text = (Object.values(r).join(",") + "," + dateDisplay).toLowerCase();
+    searchIndex.set(r, text);
+  });
+}
+
 /* 🧾 Google Sheets → CSV 読み込み */
 fetch(csvUrl)
   .then(r => r.text())
@@ -141,13 +170,29 @@ fetch(csvUrl)
       header: true,
       skipEmptyLines: true,
       complete: function(results) {
-        rows = results.data;
+        /*
+          A～E列（日付・カテゴリ・分類・メモ・金額）のみ使用。
+          F列以降にデータがあっても、表示・検索の対象にしません。
+        */
+        rows = results.data.map(r => ({
+          '日付': r['日付'] || "",
+          'カテゴリ': r['カテゴリ'] || "",
+          '分類': r['分類'] || "",
+          'メモ': r['メモ'] || "",
+          '金額': r['金額'] || ""
+        }));
+
         rows.sort((a,b) => parseSlashDate(b['日付']) - parseSlashDate(a['日付']));
+
+        createSearchIndex();
         render(rows);
       }
     });
   })
-  .catch(err => console.error("CSVの読み込みに失敗:", err));
+  .catch(err => {
+    console.error("CSVの読み込みに失敗:", err);
+    document.getElementById("loadStatus").textContent = "データの読み込みに失敗しました";
+  });
 
 /* 🔍 検索処理（エンターキー押下時のみ実行） */
 const search = document.getElementById("search");
@@ -155,17 +200,18 @@ const clearBtn = document.getElementById("clearBtn");
 
 search.addEventListener("input", () => {
   clearBtn.style.display = search.value ? "block" : "none";
-  // ※入カ中は何もしないため軽快に動作します
+  // ※入力中は検索せず、Enterキー押下時のみ検索します
 });
 
 search.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
-    const keywords = search.value.toLowerCase().trim().split(/\s+/);
+    const keywords = search.value.toLowerCase().trim().split(/\s+/).filter(Boolean);
+
     const filtered = rows.filter(r => {
-      const dateDisplay = r['日付'] ? formatDateDisplay(r['日付']) : "";
-      const text = (Object.values(r).join(",") + "," + dateDisplay).toLowerCase();
+      const text = searchIndex.get(r) || "";
       return keywords.every(kw => text.includes(kw));
     });
+
     render(filtered);
   }
 });
@@ -177,17 +223,37 @@ clearBtn.addEventListener("click", () => {
   render(rows);
 });
 
-/* 🧱 レンダリング（DocumentFragmentによる高速化） */
-function render(data){
+/* 🧱 分割レンダリング */
+function render(data) {
+  const out = document.getElementById("output");
+
+  currentData = data;
+  displayedCount = 0;
+  out.innerHTML = "";
+
+  appendNextBatch();
+}
+
+/* 次の1,000件を追加表示 */
+function appendNextBatch() {
+  if (displayedCount >= currentData.length) {
+    updateLoadStatus();
+    return;
+  }
+
   const out = document.getElementById("output");
   const fragment = document.createDocumentFragment();
+  const end = Math.min(displayedCount + PAGE_SIZE, currentData.length);
 
-  data.forEach(r=>{
+  for (let i = displayedCount; i < end; i++) {
+    const r = currentData[i];
     const el = document.createElement("div");
     el.className = "row";
+
     const displayDate = r['日付'] ? formatDateDisplay(r['日付']) : "";
     const amount = parseFloat(r['金額']) || 0;
     const amountClass = amount > 0 ? "plus" : "minus";
+
     el.innerHTML = `
       <div class="top-line">
         <div class="date">${displayDate}</div>
@@ -199,12 +265,43 @@ function render(data){
         <div class="amount ${amountClass}">${r['金額'] || ""}</div>
       </div>
     `;
-    fragment.appendChild(el);
-  });
 
-  out.innerHTML = "";
+    fragment.appendChild(el);
+  }
+
   out.appendChild(fragment);
+  displayedCount = end;
+  updateLoadStatus();
 }
+
+/* 読み込み状況を表示 */
+function updateLoadStatus() {
+  const status = document.getElementById("loadStatus");
+
+  if (currentData.length === 0) {
+    status.textContent = "該当するデータはありません";
+  } else if (displayedCount >= currentData.length) {
+    status.textContent = `全${currentData.length.toLocaleString()}件を表示しました`;
+  } else {
+    status.textContent = `${displayedCount.toLocaleString()}件表示中 / 全${currentData.length.toLocaleString()}件`;
+  }
+}
+
+/* スクロールして下部に近づいたら次の1,000件を追加 */
+let isAppending = false;
+
+window.addEventListener("scroll", () => {
+  if (isAppending || displayedCount >= currentData.length) return;
+
+  const nearBottom =
+    window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 500;
+
+  if (nearBottom) {
+    isAppending = true;
+    appendNextBatch();
+    isAppending = false;
+  }
+}, { passive: true });
 
 /* ⏰ 更新日時の取得 */
 const infoUrl = "https://script.google.com/macros/s/AKfycbztyxbPuL2IJYrC1b51oLnriV1Ms8n8uTdHKuyiJUNTlER3hULUxyKnNPSXjM9rxdrwaA/exec";
